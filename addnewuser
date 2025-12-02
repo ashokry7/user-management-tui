@@ -1,0 +1,108 @@
+# !/bin/bash
+
+NAME=""
+PASS=""
+CONFIRM_PASS=""
+
+NEW_USER_MESSAGE="Enter New User Name"
+USER_EXIST_MESSAGE="User Exists, Try another name"
+
+NEW_PASS_MESSAGE="New Password"
+CONFIRM_PASS_MESSAGE="Confirm New Password"
+
+
+check_for_cancel () {
+
+    # If user chose to cancel the operation, perform exit sequence
+    if [ "$?" != 0 ]; then
+        userdel -r "$NAME" &>> /dev/null
+        whiptail --title "Done" --msgbox "Operation Canceled" 8 78
+        exit
+    fi
+}
+
+# display an input box to enter a name for the new user
+prompt_user_name () {
+    
+    NAME=$(whiptail --inputbox "User Name: " 8 39 --title "$1" 3>&1 1>&2 2>&3)
+    check_for_cancel
+}
+
+# confirm the new user name is not used, if used, ask again
+ask_user_name () {
+
+    prompt_user_name "$NEW_USER_MESSAGE"
+
+    while [ "$NAME" = "" ]
+	do
+		prompt_user_name "User Name Cannot be Empty"
+    done
+
+    id "$NAME" &>> /dev/null
+
+    while [ "$?" = 0 ] 
+        do
+            prompt_user_name "$USER_EXIST_MESSAGE"
+            id "$NAME" &>> /dev/null
+    done
+
+    useradd -m "$NAME" &>> /dev/null
+    
+    # if [ "$?" = 0 ];then
+    #     whiptail --title "Done" --msgbox "User $NAME successfully added" 8 78
+    # fi
+}
+
+prompt_password () {
+
+    PASS=$(whiptail --passwordbox "$1" 8 78 --title "Set Password" 3>&1 1>&2 2>&3)
+    check_for_cancel
+}
+
+prompt_confirm_password () {
+
+    CONFIRM_PASS=$(whiptail --passwordbox "$1" 8 78 --title "Confirm Password" 3>&1 1>&2 2>&3)
+    check_for_cancel
+}
+
+ask_password () {
+
+    prompt_password "$NEW_PASS_MESSAGE"
+
+    prompt_confirm_password "$CONFIRM_PASS_MESSAGE"
+
+
+    while [ "$PASS" != "$CONFIRM_PASS" ]
+        do
+            whiptail --title "Password Error" --msgbox "Passwords don't match" 8 78
+
+            prompt_password $NEW_PASS_MESSAGE
+            prompt_confirm_password $CONFIRM_PASS_MESSAGE
+    done
+
+    echo "$PASS" | passwd "$NAME" --stdin &>> /dev/null
+
+    if [ "$?" != 0 ]; then
+	whiptail --title "Error" --msgbox "Password Not Set " 8 78
+    else
+	whiptail --title "Done" --msgbox "Password Updated" 8 78
+    fi
+}
+
+# PASS=$(whiptail --passwordbox "Enter password: " \
+# 8 78 \--title "")
+
+ask_user_name
+
+ask_password
+
+
+#Prompt for password update at next login
+whiptail --title "Password Update" --yesno "Force Password Change at Next Login" 8 78
+
+if [ "$?" = 0 ]; then
+	whiptail --title "Success" --msgbox "User Will be Forced to Chane Password" 8 78
+	passwd -e "$NAME" &>> /dev/null
+else 
+	whiptail --title "Success" --msgbox "Current Password will be used" 8 78
+fi

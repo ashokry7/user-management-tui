@@ -1,0 +1,51 @@
+#!/bin/bash
+
+change_pass () {
+
+    PASS=$(whiptail --title "Change Password" --passwordbox \
+    "New Password: " 8 70 3>&1 1>&2 2>&3)
+
+    CONFIRM_PASS=$(whiptail --title "Change Password" --passwordbox \
+    "Confirm Password: " 8 70 3>&1 1>&2 2>&3)
+    
+    while [ "$PASS" != "$CONFIRM_PASS" ]
+        do
+            whiptail --title "Password Error" --msgbox \
+            "Passwords don't match" 8 78
+
+            PASS=$(whiptail --title "Change Password" --passwordbox \
+    "New Password: " 8 70 3>&1 1>&2 2>&3)
+
+    CONFIRM_PASS=$(whiptail --title "Change Password" --passwordbox \
+    "Confirm Password: " 8 70 3>&1 1>&2 2>&3)
+
+    done
+
+    echo "$PASS" | passwd "$NAME" --stdin &>> /dev/null
+
+    if [ "$?" != 0 ]; then
+	whiptail --title "Error" --msgbox "Password Not Set " 8 78
+    else
+	whiptail --title "Done" --msgbox "Password Updated" 8 78
+    fi
+}
+
+# Obtain Name
+NAME=$(whiptail --title "User Name" --inputbox "User Login Name: " 8 70 \
+3>&1 1>&2 2>&3)
+
+# Check For Canclation
+if [ "$?" != 0 ]; then 
+    exit
+fi
+
+# Check Exist
+id "$NAME" &>> /dev/null
+
+if [ "$?" != 0 ]; then
+    whiptail --title "Name Error" --msgbox "User $NAME Does't Exist" 8 70
+    exit
+
+else
+    change_pass
+fi

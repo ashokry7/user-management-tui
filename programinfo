@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# automatically adjust whiptail window size
+eval $(resize)
+
+whiptail --title "User Management TUI" --msgbox "A Simple TUI \
+Script For Managing Users and Groups On a Linux System.
+
+Examples of supported oprations include adding/deleting users and groups. \
+Some operations may require some manual administrative measures \
+afterwards, for example, deleting all files that belong to a deleted user.
+
+Such feature can be added as an option in the near future, but for now, \
+the user is just deleted with no further cleanup beyond deleting home \
+directory
+
+Another type of operations are modifying users and groups. This \
+includes changing UID, GID, adding and removing members of a group \
+and locking/unlocking user accounts.
+
+You can also list users and groups. System (id<1000) and ordinary \
+users and groups can be listed separately or all together" \
+$LINES $COLUMNS $(( $LINES - 8 ))
+
+exit

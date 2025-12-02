@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Obtain Name
+NAME=$(whiptail --title "User Name" --inputbox "User Login Name: " 8 70 \
+3>&1 1>&2 2>&3)
+
+# Check For Canclation
+if [ "$?" != 0 ]; then 
+    exit
+fi
+
+# Check Exist
+id "$NAME"
+
+if [ "$?" != 0 ]; then
+    whiptail --title "Name Error" --msgbox "User $NAME Does't Exist" 8 70
+    exit
+
+else
+    usermod -L "$NAME"
+    whiptail --title "Success" --msgbox "User $NAME successfully Disabled" 8 70
+fi

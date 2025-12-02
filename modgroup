@@ -1,0 +1,170 @@
+#!/bin/bash
+
+NAME=""
+CHOISE=""
+
+#--------------------------------------------Functions
+check_cancel () {
+
+    if [ "$?" != 0 ]; then
+        exit
+    fi
+}
+
+show_menu () {
+
+	# Obtain Desired Option
+	CHOISE=$(whiptail --title "User Modification" --menu "Choose an option" --ok-button "Choose Hilighted" \
+	--cancel-button "Exit" 25 78 16 \
+    "Change Name"   	    "Change Group Name" \
+    "Change ID" 		    "Change Group ID" \
+    "Add User"  	    	"Add a New User To The  Group" \
+    "Remove User"  			"Remove a User From The Group" \
+    3>&1 1>&2 2>&3)
+
+    # Cancelation Condition
+    check_cancel
+
+	# Obtain User Name
+	NAME=$(whiptail --title "Name" --inputbox "Group Name: " 8 65 3>&1 1>&2 2>&3)
+
+	check_cancel
+
+	ISEXIST=$(grep ${NEW_NAME}: /etc/group)
+
+	if [ "$ISEXIST" = "" ]; then
+    	whiptail --title "Error" --msgbox "Group $NAME Doesn't Exist" 8 78
+    	exit
+	fi
+
+}
+
+change_name () {
+
+	NEW_NAME=$(whiptail --title "Change Group Name" --inputbox \
+    "New Name: " 8 65 3>&1 1>&2 2>&3)
+
+    check_cancel
+
+    ISEXIST=$(grep ${NEW_NAME}: /etc/group)
+
+    while [ "$ISEXIST" != "" ]
+        do
+            NEW_NAME=$(whiptail --title "$NEW_NAME Already Exists" \
+            --inputbox "Try Another Name: " 8 65 3>&1 1>&2 2>&3)
+
+			check_cancel
+            ISEXIST=$(grep ${NEW_NAME}: /etc/group)
+    done
+
+    groupmod --new-name "$NEW_NAME" "$NAME" &>> /dev/null
+    whiptail --title "Success" --msgbox "Group Name $NAME \
+Updated to $NEW_NAME" 8 65
+
+    show_menu
+
+}
+
+change_id () {
+
+    NEW_ID=$(whiptail --title "Change GID" --inputbox \
+    "New ID: " 8 65 3>&1 1>&2 2>&3)
+
+    check_cancel
+
+    ISEXIST=$(grep ${NEW_ID}: /etc/group)
+
+    while [ "$ISEXIST" != "" ]
+        do
+            NEW_ID=$(whiptail --title "$NEW_ID Already Assigned" \
+            --inputbox "Try a Different ID: " 8 65)
+
+            check_cancel
+            ISEXIST=$(grep ${NEW_ID}: /etc/group)
+    done
+
+    groupmod -g "$NEW_ID" "$NAME"
+    whiptail --title "Success" --msgbox "Group ID Changed To $NEW_ID" 8 78
+
+    show_menu
+
+
+}
+
+add_user () {
+
+	USER_NAME=$(whiptail --title "Add User" \
+            --inputbox "User Name: " 8 65 3>&1 1>&2 2>&3)
+
+
+	check_cancel
+
+	id "$USER_NAME" &>> /dev/null
+
+	if [ "$?" != 0 ]; then
+		whiptail --title  "Error, Operation Aborted" --msgbox "$USER_NAME Doesn't Exist" 8 65
+		exit
+	else
+		usermod -aG "$NAME" "$USER_NAME" &>> /dev/null
+		whiptail --title "Success" --msgbox "User $NAME Added To Group $GROUP_NAME" 8 78
+	fi
+
+show_menu
+}
+
+remove_user () {
+
+	USER_NAME=$(whiptail --title "Remove User" \
+            --inputbox "User Name: " 8 65 3>&1 1>&2 2>&3)
+
+    id "$USER_NAME" &>> /dev/null
+
+    if [ "$?" != 0 ]; then
+        whiptail --title  "Error, Operation Aborted" --msgbox "$USER_NAME Doesn't Exist" 8 65
+        exit
+    else
+        groupmems -d "$USER_NAME" -g "$NAME" &>> /dev/null
+
+		if [ "$?" -eq 0 ]; then
+			whiptail --title "Success" --msgbox "User $USER_NAME \
+Removed From Group $NAME" 8 78
+		else
+			whiptail --title "No Change" --msgbox "User $USER_NAME Is \
+Not A Member of $NAME" 8 78
+		fi
+    fi
+
+	show_menu
+}
+
+#------------------------------Functions-End-----------
+
+#--------------------------main---------------
+
+show_menu
+
+while [ 0 -eq 0 ]
+    do
+        case "$CHOISE" in
+
+            "Change Name")
+                change_name
+                ;;
+
+            "Change ID")
+                change_id
+                ;;
+
+            "Add User")
+                add_user
+				;;
+
+			"Remove User")
+				remove_user
+				;;
+
+			*)
+				whiptail --title "Error" --msgbox "Unexpected Error" 8 78
+				;;
+esac
+done

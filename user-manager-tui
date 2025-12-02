@@ -1,0 +1,98 @@
+#!/bin/bash
+
+CHOICE=""
+
+# If User wants to exit
+check_cancel () {
+
+	if [ "$?" != 0 ]; then
+		exit
+	fi
+}
+
+show_menu () {
+
+	CHOICE=$(whiptail --title "User Administrative Menu" --ok-button \
+	"Select Hilighted" --cancel-button "Exit" \
+	--menu "Choose an option" 25 78 16 \
+	"Add User"		"Add a New User To The System" \
+	"Delete User"	"Delete a User Account" \
+	"Change Pass"	"Change User Password" \
+	"Disable User"	"Disable User Account" \
+	"Enable User"	"Enable User Account" \
+	"Modify User" 	"Modify an Existing User (name, shell, etc.)" \
+	"List Users" 	"List Available Users" \
+	"Add Group" 	"Add a New Group" \
+	"Delete Group"	"Delete an Existing Group" \
+	"Modify Group" 	"Modify an Existing Group" \
+	"List Groups" 	"List Available Groups" \
+	"About"			"Information About This program" \
+	3>&1 1>&2 2>&3)
+
+	check_cancel
+}
+
+
+while [ 0 -eq 0 ]
+	do
+	
+		show_menu
+
+		case "$CHOICE" in
+
+		"Add User")
+			./addnewuser
+			;;
+
+		"Delete User")
+			./deleteuser
+			;;
+
+		"Change Pass")
+			./changepass
+			;;
+
+		"Disable User")
+			./disableuser
+			;;
+
+		"Enable User")
+			./enableuser
+			;;
+
+		"Modify User")
+			./moduser
+			;;
+
+		"List Users")
+			./lsusers
+			;;
+
+		"Add Group")
+			./addnewgroup
+			;;
+
+		"Delete Group")
+			./deletegroup
+			;;
+
+		"Modify Group")
+			./modgroup
+			;;
+
+		"List Groups")
+			./lsgroups
+			;;
+
+		"About")
+			./programinfo
+			;;
+
+		*)
+			whiptail --title "Error" --msgbox "Unexpected Error" 8 70
+			exit
+			;;
+
+		esac
+
+done

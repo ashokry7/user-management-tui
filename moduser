@@ -1,0 +1,212 @@
+#!/bin/bash
+
+NAME=""
+CHOISE=""
+
+#--------------------------------------------Functions
+check_cancel () {
+
+    if [ "$?" != 0 ]; then
+        exit
+    fi
+}
+
+show_menu () {
+
+	# Obtain Desired Option
+	CHOISE=$(whiptail --title "User Modification" --menu "Choose an option" --ok-button "Choose Hilighted" \
+	--cancel-button "Exit" 25 78 16 \
+    "Change Name"   	    "Change User Login Name" \
+    "Change ID" 		    "Change User ID" \
+    "Add To Group"  	    "Add User To a Supplementary Group" \
+    "Remove From Group"  	"Remove User From Supplementary Group" \
+	"Change Primary Group"  "Change User Primary Group" \
+	"Lock"                  "Lock User Account (Disable Password)" \
+    "Unlock"	   	        "Unlock User Account" \
+    3>&1 1>&2 2>&3)
+
+    # Cancelation Condition
+    check_cancel
+
+	# Obtain User Name
+	NAME=$(whiptail --title "Name" --inputbox "User Login Name: " 8 78 3>&1 1>&2 2>&3)
+
+	check_cancel
+
+	id "$NAME" &>> /dev/null
+
+	if [ "$?" -ne 0 ]; then
+    	whiptail --title "Error" --msgbox "User $NAME Doesn't Exist" 8 78
+    	exit
+	fi
+
+}
+
+change_name () {
+
+	NEW_NAME=$(whiptail --title "Change Login Name" --inputbox \
+    "New Name: " 8 78 3>&1 1>&2 2>&3)
+
+    check_cancel
+
+    id "$NEW_NAME" &>> /dev/null
+
+    while [ "$?" = 0 ] 
+        do
+            NEW_NAME=$(whiptail --title "$NEW_NAME Already Exists" \
+            --inputbox "Try Another Name: " 8 78)
+
+			check_cancel
+            id "$NEW_NAME" &>> /dev/null
+    done
+
+    usermod -l "$NEW_NAME" "$NAME"
+    whiptail --title "Success" --msgbox "User Login $NAME Updated to $NEW_NAME" \
+    8 78
+
+    show_menu
+
+}
+
+change_id () {
+
+    NEW_ID=$(whiptail --title "Change UID" --inputbox \
+    "New ID: " 8 78 3>&1 1>&2 2>&3)
+
+    check_cancel
+
+    id "$NEW_ID" &>> /dev/null
+
+    while [ "$?" = 0 ] 
+        do
+            NEW_ID=$(whiptail --title "$NEW_ID Already Assigned" \
+            --inputbox "Try a Different ID: " 8 78)
+
+            check_cancel
+            id "$NEW_ID" &>> /dev/null
+    done
+
+    usermod -u "$NEW_ID" "$NAME"
+    whiptail --title "Success" --msgbox "User ID Changed To $NEW_ID" 8 78
+
+    show_menu
+
+
+}
+
+add_to_group () {
+
+	GROUP_NAME=$(whiptail --title "Add To Group" \
+            --inputbox "Group Name: " 8 78 3>&1 1>&2 2>&3)
+
+
+	check_cancel
+
+	ISEXIST=$(grep "$GROUP_NAME" /etc/group)
+
+	if [ "$ISEXIST" = "" ]; then
+		whiptail --title  "Error, Operation Aborted" --msgbox "Group $GROUP_NAME Doesn't Exist" 8 78
+		exit
+	else
+		usermod -aG "$GROUP_NAME" "$NAME" &>> /dev/null
+		whiptail --title "Success" --msgbox "User $NAME Added To Group $GROUP_NAME" 8 78
+	fi
+
+show_menu
+}
+
+remove_from_group () {
+
+	GROUP_NAME=$(whiptail --title "Remove From Group" \
+            --inputbox "Group Name: " 8 78 3>&1 1>&2 2>&3)
+
+    ISEXIST=$(grep "$GROUP_NAME" /etc/group)
+
+    if [ "$ISEXIST" = "" ]; then
+        whiptail --title  "Error, Operation Aborted" --msgbox "Group $GROUP_NAME Doesn't Exist" 8 78
+        exit
+    else
+        groupmems -d "$NAME" -g "$GROUP_NAME" &>> /dev/null
+
+		if [ "$?" -eq 0 ]; then
+			whiptail --title "Success" --msgbox "User $NAME Removed From Group $GROUP_NAME" 8 78
+		else
+			whiptail --title "Success" --msgbox "User $NAME Is Not A Member of $GROUP_NAME" 8 78
+		fi
+    fi
+
+	show_menu
+}
+
+change_primary_group () {
+
+	GROUP_NAME=$(whiptail --title "Change Primary Group" \
+            --inputbox "New Group Name: " 8 78 3>&1 1>&2 2>&3)
+
+    ISEXIST=$(grep "$GROUP_NAME" /etc/group)
+
+    if [ "$ISEXIST" = "" ]; then
+        whiptail --title  "Error, Operation Aborted" --msgbox "Group $GROUP_NAME Doesn't Exist" 8 78
+        exit
+    else
+        usermod -g "$GROUP_NAME" "$NAME" &>> /dev/null
+		whiptail --title "Success" --msgbox "Primary Group For $NAME Changed To $GROUP_NAME" 8 78
+	fi
+
+	show_menu
+}
+
+lock_account () {
+	usermod -L "$NAME"
+	whiptail --title "Done" --msgbox "User $NAME Locked" 8 78
+	show_menu
+}
+
+unlock_account () {
+	usermod -U "$NAME"
+	whiptail --title "Done" --msgbox "User $NAME Unlocked" 8 78
+	show_menu
+}
+#------------------------------Functions-End-----------
+
+#--------------------------main---------------
+
+show_menu
+
+while [ 0 -eq 0 ]
+    do
+        case "$CHOISE" in
+
+            "Change Name")
+                change_name
+                ;;
+
+            "Change ID")
+                change_id
+                ;;
+
+            "Add To Group")
+                add_to_group
+				;;
+
+			"Remove From Group")
+				remove_from_group
+				;;
+
+			"Change Primary Group")
+				change_primary_group
+				;;
+
+			"Unlock")
+				unlock_account
+				;;
+
+			"Lock")
+				lock_account
+				;;
+
+			*)
+				whiptail --title "Error" --msgbox "Unexpected Error" 8 78
+				;;
+esac
+done

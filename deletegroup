@@ -1,0 +1,26 @@
+#!/bin/bash
+
+NAME=""
+ISEXIST=""
+
+NAME=$(whiptail --inputbox "Group Name: " 8 39 --title "Delete Group" 3>&1 1>&2 2>&3)
+
+# If group pressed cancel, print and exit
+if [ "$?" != 0 ]; then
+
+        whiptail --msgbox "Group Not Deleted, Operation Canceled" 8 39 --title "Canceled"
+        exit
+
+else
+    	ISEXIST=$(grep "$NAME" /etc/group)
+
+        # If group is not found, return with an error code (1)
+        if [ "$ISEXIST" = "" ]; then
+                whiptail --msgbox "Group ${NAME} Doesn't Exist" 8 39 --title "Error"
+                exit 1
+        fi
+
+        # If found, delete it and return 0 (success)
+        groupdel "$NAME"
+        whiptail --msgbox "Group $NAME Deleted" 8 39 --title "Success"
+fi

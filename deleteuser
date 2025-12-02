@@ -1,0 +1,27 @@
+#!/bin/bash
+
+
+NAME=""
+
+
+NAME=$(whiptail --inputbox "User Name: " 8 39 --title "Delete User" 3>&1 1>&2 2>&3)
+
+# If user pressed cancel, print and exit
+if [ "$?" != 0 ]; then
+
+	whiptail --msgbox "User Not Deleted, Operation Canceled" 8 39 --title "Canceled"
+	exit
+
+else
+	id "${NAME}" &>> /dev/null
+
+	# If user is not found, return with an error code (1)
+	if [ "$?" != 0 ]; then
+		whiptail --msgbox "User ${NAME} Doesn't Exist" 8 39 --title "Error"
+		exit 1
+	fi
+
+	# If found, delete it and return 0 (success)
+	userdel -r "$NAME"
+	whiptail --msgbox "User $NAME Deleted" 8 39 --title "Success"
+fi

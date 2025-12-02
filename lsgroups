@@ -1,0 +1,86 @@
+#!/bin/bash
+
+
+#User Input
+CH=""
+
+
+show_options () {
+        CH=$(whiptail --title "Groups" --menu "List Groups" 25 78 16 \
+        "Ordinary" "List Ordinary Groups (uid =>1000)" \
+        "System"   "List System Groups (uid <1000)" \
+        "All"      "List All Groups" \
+        3>&1 1>&2 2>&3)
+
+	#If the user pressed cancel, terminate, otherwise go on
+        if [ "$?" != 0 ]; then
+                exit
+        fi
+}
+
+
+show_system_groups () {
+
+	#GIDs end with three digits or less (less than 1000)
+	whiptail --title "System Groups" --yesno \
+	"$(cut /etc/group -d : -f 1,3 --output-delimiter=" ==> " | grep -E "[^0-9][0-9?][0-9?][0-9]$")" \
+	--scrolltext --yes-button "ok" --no-button "cancel" 20 78
+
+	if [ "$?" != 0 ]; then
+		show_options
+	else
+		exit
+	fi
+}
+
+show_ordinary_groups () {
+
+        #GIDs end with 4 digits or more(less than 1000)
+        whiptail --title "Ordinary Groups" --yesno \
+        "$(cut /etc/group -d : -f 1,3 --output-delimiter=" ==> " | grep "[0-9][0-9][0-9][0-9]")" \
+	--yes-button "ok" --no-button "cancel" --scrolltext 20 78
+
+	if [ "$?" != 0 ]; then
+                show_options
+        else
+                exit
+        fi
+}
+
+show_all_groups () {
+
+	whiptail --title "All Groups" --yesno \
+        "$(cut -d : -f 1,3 --output-delimiter=" ==> " /etc/group)" --scrolltext \
+	--yes-button "ok" --no-button "cancel" --scrolltext 20 78
+
+        if [ "$?" != 0 ]; then
+                show_options
+        else
+            	exit
+        fi
+}
+
+show_options
+
+#Infinite loop, exiting is handled inside show functions
+while [ 0 -eq 0 ]
+	do
+
+		case "$CH" in
+			"Ordinary")
+			show_ordinary_groups
+			;;
+
+			"System")
+			show_system_groups
+			;;
+
+			"All")
+			show_all_groups
+			;;
+
+			*)
+			exit
+			;;
+		esac
+done
